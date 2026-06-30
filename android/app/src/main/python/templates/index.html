@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NASDAQ 大市值低估筛选与 BTC 周期仪表盘</title>
+    <link rel="stylesheet" href="/static/styles.css?v=market-cap-input-20260630" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">实时市场仪表盘</p>
+          <h1>NASDAQ 大市值低估筛选与 BTC 四年周期</h1>
+        </div>
+        <div class="status">
+          <span id="sync-dot" class="dot"></span>
+          <span id="last-updated">等待刷新</span>
+        </div>
+      </header>
+
+      <section class="controls" aria-label="筛选设置">
+        <label>
+          股票池
+          <input id="symbols" placeholder="留空 = 扫描 NASDAQ，排除中概股" />
+        </label>
+        <label>
+          最低市值（亿美元）
+          <input id="min-market-cap" type="number" min="0" step="1" value="100" />
+        </label>
+        <label>
+          扫描数量
+          <input id="scan-limit" type="number" min="1" max="500" value="500" />
+        </label>
+        <label>
+          自动刷新
+          <select id="refresh-interval">
+            <option value="30000">30 秒</option>
+            <option value="60000" selected>60 秒</option>
+            <option value="180000">3 分钟</option>
+            <option value="0">关闭</option>
+          </select>
+        </label>
+        <button id="refresh-now" type="button">立即刷新</button>
+      </section>
+
+      <section class="grid">
+        <article class="panel btc-panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">比特币</p>
+              <h2>BTC 周期信号</h2>
+            </div>
+            <span id="btc-action" class="pill">加载中</span>
+          </div>
+          <div class="btc-price">
+            <span id="btc-price">$--</span>
+            <span id="btc-change">--</span>
+          </div>
+          <div class="btc-grid">
+            <div>
+              <span>减半后天数</span>
+              <strong id="btc-days">--</strong>
+            </div>
+            <div>
+              <span>下轮减半倒计时</span>
+              <strong id="btc-halving-countdown">--</strong>
+              <small id="btc-halving-detail">--</small>
+            </div>
+            <div>
+              <span>恐慌贪婪</span>
+              <strong id="btc-fng-value">--</strong>
+              <small id="btc-fng-detail">--</small>
+            </div>
+          </div>
+          <p id="btc-detail" class="note"></p>
+          <div class="btc-rhythm" aria-label="BTC 历史顶底节奏">
+            <div>
+              <span>历史见顶后见底</span>
+              <strong id="btc-top-bottom-days">--</strong>
+              <small id="btc-top-bottom-detail">--</small>
+            </div>
+            <div>
+              <span>历史见底后见顶</span>
+              <strong id="btc-bottom-top-days">--</strong>
+              <small id="btc-bottom-top-detail">--</small>
+            </div>
+            <div>
+              <span>当前底部至动态高点</span>
+              <strong id="btc-current-cycle-days">--</strong>
+              <small id="btc-current-cycle-detail">--</small>
+            </div>
+          </div>
+          <div class="btc-forecast" aria-label="BTC 周期预测">
+            <div class="btc-forecast-head">
+              <span>周期预测</span>
+              <small id="btc-forecast-method">基于前几轮牛熊周期样本</small>
+            </div>
+            <div class="btc-forecast-grid">
+              <div>
+                <span>减半推顶部</span>
+                <strong id="btc-halving-top-date">--</strong>
+                <div id="btc-halving-top-progress" class="forecast-progress"></div>
+                <small id="btc-halving-top-detail">--</small>
+              </div>
+              <div>
+                <span>减半推底部</span>
+                <strong id="btc-halving-bottom-date">--</strong>
+                <div id="btc-halving-bottom-progress" class="forecast-progress"></div>
+                <small id="btc-halving-bottom-detail">--</small>
+              </div>
+              <div>
+                <span>见底推顶部</span>
+                <strong id="btc-bottom-top-date">--</strong>
+                <div id="btc-bottom-top-progress" class="forecast-progress"></div>
+                <small id="btc-bottom-top-date-detail">--</small>
+              </div>
+              <div>
+                <span>见顶推底部</span>
+                <strong id="btc-top-bottom-date">--</strong>
+                <div id="btc-top-bottom-progress" class="forecast-progress"></div>
+                <small id="btc-top-bottom-date-detail">--</small>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel summary-panel">
+          <div class="panel-head analyst-title">
+            <div>
+              <p class="eyebrow">机构研究</p>
+              <h2>机构价模块</h2>
+            </div>
+            <span id="target-symbol" class="pill">--</span>
+          </div>
+
+          <div class="analyst-card-grid">
+            <section class="analyst-card top-analyst-card">
+              <h3>顶级分析师 <span class="briefcase" aria-hidden="true"></span></h3>
+              <div class="top-analyst-body">
+                <strong id="top-analyst-firm">--</strong>
+                <span id="top-analyst-name" class="subtle">--</span>
+                <div class="analyst-score-line">
+                  <span id="top-analyst-score-bar"></span>
+                </div>
+                <b id="top-analyst-score">--/100</b>
+              </div>
+              <div class="latest-badge-row">
+                <span>最新评级</span>
+                <b id="top-analyst-rating" class="rating-badge">--</b>
+              </div>
+            </section>
+
+            <section class="analyst-card price-target-card">
+              <h3>机构目标价</h3>
+              <div class="target-axis">
+                <span id="target-average-bubble" class="axis-bubble">--<small>平均</small></span>
+                <span id="target-current-bubble" class="axis-bubble current">--<small>现价</small></span>
+                <span id="axis-current-dot" class="axis-dot current-dot"></span>
+                <span id="axis-average-dot" class="axis-dot average-dot"></span>
+              </div>
+              <div class="axis-labels">
+                <div><strong id="target-low">--</strong><span>最低</span></div>
+                <div><strong id="target-high">--</strong><span>最高</span></div>
+              </div>
+            </section>
+
+            <section class="analyst-card recommendation-card">
+              <h3>分析师建议</h3>
+              <div class="recommendation-layout">
+                <div id="recommendation-bars" class="recommendation-bars"></div>
+                <div class="recommendation-legend">
+                  <span><i class="legend-strong"></i>强烈买入</span>
+                  <span><i class="legend-buy"></i>买入</span>
+                  <span><i class="legend-hold"></i>持有</span>
+                  <span><i class="legend-under"></i>跑输</span>
+                  <span><i class="legend-sell"></i>卖出</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="analyst-card latest-rating-card">
+              <h3>最新评级</h3>
+              <dl>
+                <div><dt>日期</dt><dd id="latest-rating-date">--</dd></div>
+                <div><dt>机构/分析师</dt><dd id="latest-rating-analyst">--</dd></div>
+                <div><dt>评级动作</dt><dd id="latest-rating-action">--</dd></div>
+                <div><dt>评级</dt><dd id="latest-rating-value">--</dd></div>
+                <div><dt>目标价动作</dt><dd id="latest-price-action">--</dd></div>
+                <div><dt>目标价</dt><dd id="latest-price-target">--</dd></div>
+              </dl>
+            </section>
+          </div>
+
+          <div class="pool-meta">
+            <div><span>股票池</span><strong id="pool-count">--</strong></div>
+            <div><span>已排除中概</span><strong id="excluded-count">--</strong></div>
+          </div>
+        </article>
+      </section>
+
+      <section class="table-wrap">
+        <div class="panel-head table-title">
+          <div>
+            <p class="eyebrow">美股</p>
+            <h2>低估候选股票</h2>
+          </div>
+          <span id="stock-source" class="source"></span>
+        </div>
+        <div class="market-sentiment" aria-label="美股情绪指标">
+          <div>
+            <span>VIX 指数</span>
+            <strong id="vix-level">--</strong>
+            <small id="vix-detail">--</small>
+          </div>
+          <div>
+            <span>美股恐慌贪婪</span>
+            <strong id="us-fng-score">--</strong>
+            <small id="us-fng-detail">--</small>
+          </div>
+          <div>
+            <span>VIX 当前建议</span>
+            <strong id="vix-advice">--</strong>
+            <small id="vix-advice-detail">--</small>
+          </div>
+        </div>
+        <div class="vix-probability" aria-label="VIX 历史概率表">
+          <div class="vix-probability-head">
+            <strong>VIX 历史概率表</strong>
+            <span id="market-sentiment-source">等待加载</span>
+          </div>
+          <div class="vix-table-wrap">
+            <table class="vix-table">
+              <thead>
+                <tr>
+                  <th>VIX 区间</th>
+                  <th>样本</th>
+                  <th>1 月上涨概率</th>
+                  <th>3 月上涨概率</th>
+                  <th>6 月上涨概率</th>
+                  <th>建议</th>
+                </tr>
+              </thead>
+              <tbody id="vix-prob-body">
+                <tr><td colspan="6" class="empty">正在计算 VIX 历史概率...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-scroller">
+          <table>
+            <thead>
+              <tr>
+                <th>代码</th>
+                <th>公司</th>
+                <th>价格</th>
+                <th>市值</th>
+                <th>目标均价</th>
+                <th>上行空间</th>
+                <th>评分</th>
+                <th>行业</th>
+                <th>结论</th>
+              </tr>
+            </thead>
+            <tbody id="stocks-body">
+              <tr><td colspan="9" class="empty">正在加载真实市场数据...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script src="/static/app.js?v=market-cap-input-20260630"></script>
+  </body>
+</html>

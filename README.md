@@ -2,7 +2,7 @@
 
 这是一个 Windows 桌面软件，用于本地查看美股低估筛选、机构目标价、市场情绪和 BTC 周期数据。
 
-当前交付形式是 exe 安装包。普通用户安装后从桌面或开始菜单打开即可，不需要 Python、不需要 `.venv`，也不需要源码目录。软件打开后是独立桌面应用窗口，不会跳到外部浏览器。
+当前交付形式包含 Windows exe 安装包和 Android APK。普通用户安装后从桌面、开始菜单或手机桌面打开即可，不需要 Python、不需要 `.venv`，也不需要源码目录。Windows 软件打开后是独立桌面应用窗口，不会跳到外部浏览器；Android 版本打开后是普通手机 App。
 
 ## 功能概览
 
@@ -27,10 +27,13 @@ requirements.txt             运行依赖
 requirements-build.txt       打包依赖
 StockAnalysis.spec           PyInstaller 打包配置
 scripts\build_exe.ps1        一键构建 exe 和安装包
+scripts\build_apk.ps1        一键构建 Android APK
 packaging\install.cmd        安装包内使用的安装脚本
 packaging\uninstall.cmd      安装包内使用的卸载脚本
+android\                     Android APK 工程，内置 Python/Flask 后端和 WebView
 dist\StockAnalysis.exe       便携版，可直接双击运行
 dist\StockAnalysisSetup.exe  安装包，推荐交付普通用户
+dist\StockAnalysis.apk       Android 安装包，手机侧载安装使用
 ```
 
 ## 普通用户使用
@@ -73,6 +76,29 @@ dist\StockAnalysis.exe
 ```
 
 这个文件不需要 Python 环境，也不需要源码目录。
+
+## Android 用户使用
+
+交付 Android 用户时，给这个文件：
+
+```text
+dist\StockAnalysis.apk
+```
+
+安装方式：
+
+1. 把 `StockAnalysis.apk` 发送到手机，例如微信文件传输、数据线、网盘等。
+2. 在手机文件管理器中点击 APK。
+3. 如果系统提示“禁止安装未知来源应用”，进入设置允许当前文件管理器安装未知应用。
+4. 安装完成后，在手机桌面打开 `Stock Analysis`。
+
+Android 版本是独立 App：APK 内置 Python/Flask 后端，并通过 Android WebView 打开本机 `127.0.0.1` 页面；不需要电脑、不需要浏览器、不需要源码目录。
+
+注意：
+
+- 当前 APK 是 debug/self-signed 构建，适合内部自用和侧载安装。
+- 如果要上架应用商店，需要做 release 签名、图标、隐私政策和商店合规材料。
+- 手机需要联网访问 NASDAQ、Yahoo Finance、CoinGecko、Alternative.me 等公开接口。
 
 ### 页面筛选项
 
@@ -184,6 +210,35 @@ dist\StockAnalysisSetup.exe
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_exe.ps1 -SkipInstaller
 ```
 
+### 构建 Android APK
+
+首次构建会自动下载本地构建工具到 `tools\` 目录，包括：
+
+- JDK 17
+- Python 3.11
+- Android command line tools
+- Android SDK Platform 35
+- Android Build Tools
+- Gradle 8.9
+
+`tools\` 目录已被 `.gitignore` 忽略，不需要提交。
+
+构建 APK：
+
+```powershell
+cd C:\Users\DELL\Desktop\stockAnlysis
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build_apk.ps1
+```
+
+构建完成后会生成：
+
+```text
+dist\StockAnalysis.apk
+dist\StockAnalysisAndroid-debug.apk
+```
+
+`dist\StockAnalysis.apk` 是给手机安装使用的友好文件名；两个 APK 内容相同。
+
 ## 验收流程
 
 ### 1. 检查产物
@@ -243,6 +298,40 @@ $uninstall = Join-Path $env:LOCALAPPDATA 'StockAnalysisDashboard\uninstall.cmd'
 Start-Process -FilePath $uninstall -Wait
 ```
 
+### 5. 验证 Android APK
+
+检查 APK 是否存在：
+
+```powershell
+Get-Item .\dist\StockAnalysis.apk
+```
+
+检查 APK 元数据：
+
+```powershell
+$aapt = Resolve-Path .\tools\android-sdk\build-tools\35.0.0\aapt.exe
+& $aapt dump badging .\dist\StockAnalysis.apk | Select-String -Pattern 'package:|application-label:|launchable-activity:|uses-permission|sdkVersion|targetSdkVersion'
+```
+
+应该看到：
+
+- 包名：`com.stockanalysis.dashboard`
+- 应用名：`Stock Analysis`
+- 入口：`com.stockanalysis.dashboard.MainActivity`
+- 权限：`android.permission.INTERNET`
+- minSdk：`26`
+- targetSdk：`35`
+
+如果电脑连接了安卓手机并开启 USB 调试，可以安装到手机验证：
+
+```powershell
+$adb = Resolve-Path .\tools\android-sdk\platform-tools\adb.exe
+& $adb devices
+& $adb install -r .\dist\StockAnalysis.apk
+```
+
+安装后在手机桌面打开 `Stock Analysis`，确认应用窗口能加载仪表盘数据。
+
 ## 发布流程
 
 推荐发布步骤：
@@ -253,7 +342,8 @@ Start-Process -FilePath $uninstall -Wait
 4. 验证 `dist\StockAnalysis.exe` 的 `--smoke-test`。
 5. 验证 `dist\StockAnalysis.exe` 的 `--webview-smoke-test`。
 6. 安装 `dist\StockAnalysisSetup.exe` 验证快捷方式、启动行为和卸载行为。
-7. 把新的 `dist\StockAnalysisSetup.exe` 发给使用者。
+7. 如需 Android 版本，运行 `scripts\build_apk.ps1` 并检查 `dist\StockAnalysis.apk`。
+8. 把新的 `dist\StockAnalysisSetup.exe` 或 `dist\StockAnalysis.apk` 发给使用者。
 
 用户安装新版时，可以直接运行新的安装包覆盖旧版。如果遇到异常，先从开始菜单运行 `Uninstall Stock Analysis Dashboard` 卸载，再安装新版。
 
